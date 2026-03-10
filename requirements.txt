@@ -7,3 +7,4 @@ librosa
 numpy
 soundfile
 tensorflow
+wikipedia-api
