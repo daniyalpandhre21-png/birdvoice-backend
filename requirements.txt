@@ -6,3 +6,4 @@ requests
 librosa
 numpy
 soundfile
+tensorflow
