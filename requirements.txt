@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+birdnetlib
+python-multipart
+requests
