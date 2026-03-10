@@ -3,3 +3,6 @@ uvicorn
 birdnetlib
 python-multipart
 requests
+librosa
+numpy
+soundfile
