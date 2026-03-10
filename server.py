@@ -10,6 +10,10 @@ from utils.media_fetcher import get_bird_image
 from utils.wiki_summary import get_bird_summary
 
 app = FastAPI(title="Bird Voice Recognition API")
+@app.get("/")
+def home():
+    return {"status": "BirdVoice API running"}
+
 analyzer = Analyzer()
 
 # CORS allow frontend
