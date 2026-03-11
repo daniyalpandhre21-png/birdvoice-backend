@@ -11,24 +11,9 @@ from utils.ebird import get_rarity
 from utils.media_fetcher import get_bird_image
 from utils.wiki_summary import get_bird_summary
 
-app = FastAPI(title="Bird Voice Recognition API")
+app = FastAPI(title="BirdVoice API")
 
-@app.get("/")
-def home():
-    return {"status": "BirdVoice API running"}
-
-# analyzer lazy load
-analyzer = None
-
-def get_analyzer():
-    global analyzer
-    if analyzer is None:
-        print("STEP 0: Loading BirdNET model...")
-        analyzer = Analyzer()
-        print("STEP 0: BirdNET model loaded")
-    return analyzer
-
-# allow requests
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -37,38 +22,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Load model once at startup
+print("Loading BirdNET model...")
+analyzer = Analyzer()
+print("BirdNET model loaded.")
+
+@app.get("/")
+def home():
+    return {"status": "BirdVoice API running"}
+
 @app.post("/identify")
 async def identify(audio: UploadFile = File(...), lat: float = None, lon: float = None):
 
     tmp_path = None
 
     try:
-        print("STEP 1: request received")
+        print("Request received")
 
         contents = await audio.read()
-        print("STEP 2: audio read")
 
         if not contents:
-            raise HTTPException(status_code=400, detail="Empty audio file")
+            raise HTTPException(status_code=400, detail="Empty audio")
 
+        # save audio
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
             tmp.write(contents)
             tmp_path = tmp.name
 
-        print("STEP 3: audio saved:", tmp_path)
+        print("Audio saved:", tmp_path)
 
-        # load audio
+        # trim audio to 5 seconds
         sound = AudioSegment.from_file(tmp_path)
-        print("STEP 4: audio loaded")
-
-        # trim to 8 seconds
-        sound = sound[:8000]
+        sound = sound[:5000]
         sound.export(tmp_path, format="wav")
 
-        print("STEP 5: audio trimmed")
-
-        analyzer = get_analyzer()
-        print("STEP 6: analyzer ready")
+        print("Audio trimmed")
 
         recording = Recording(
             analyzer,
@@ -79,27 +67,18 @@ async def identify(audio: UploadFile = File(...), lat: float = None, lon: float 
             min_conf=0.1,
         )
 
-        print("STEP 7: recording object created")
-
-        print("STEP 8: starting analysis")
+        print("Starting analysis")
         recording.analyze()
-
-        print("STEP 9: analysis finished")
+        print("Analysis finished")
 
         if not recording.detections:
             raise HTTPException(status_code=404, detail="No bird detected")
 
-        top = sorted(
-            recording.detections,
-            key=lambda x: x["confidence"],
-            reverse=True
-        )[0]
+        top = sorted(recording.detections, key=lambda x: x["confidence"], reverse=True)[0]
 
         species = top["common_name"]
         scientific_name = top["scientific_name"]
         confidence = round(top["confidence"], 2)
-
-        print("STEP 10: bird detected:", species)
 
         rarity = get_rarity(scientific_name) or "unknown"
         image_url = get_bird_image(species, scientific_name)
@@ -119,9 +98,7 @@ async def identify(audio: UploadFile = File(...), lat: float = None, lon: float 
         }
 
     except Exception as e:
-        print("ERROR during identify")
         traceback.print_exc()
-
         return JSONResponse(
             content={"error": str(e)},
             status_code=500
@@ -130,4 +107,3 @@ async def identify(audio: UploadFile = File(...), lat: float = None, lon: float 
     finally:
         if tmp_path and os.path.exists(tmp_path):
             os.remove(tmp_path)
-            print("STEP 11: temp file removed")
