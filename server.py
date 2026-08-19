@@ -30,7 +30,7 @@ app = FastAPI(title="Bird Voice Recognition API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -107,7 +107,12 @@ def get_analyzer():
 
 def run_birdnet(audio_path, lat, lon):
 
+    print("RUN_BIRDNET: getting analyzer...", flush=True)
+
     model = get_analyzer()
+
+    print("RUN_BIRDNET: analyzer ready", flush=True)
+    print("RUN_BIRDNET: creating Recording...", flush=True)
 
     recording = Recording(
         model,
@@ -118,7 +123,18 @@ def run_birdnet(audio_path, lat, lon):
         min_conf=0.20
     )
 
+    print("RUN_BIRDNET: Recording created", flush=True)
+    print("RUN_BIRDNET: calling recording.analyze()...", flush=True)
+
     recording.analyze()
+
+    print("RUN_BIRDNET: recording.analyze() finished", flush=True)
+
+    print(
+        "RUN_BIRDNET: detections =",
+        len(recording.detections),
+        flush=True
+    )
 
     return recording.detections
 
