@@ -1,8 +1,20 @@
 __pycache__/
 *.pyc
+.venv/
+venv/
+env/
+.env
 
-bird_audio_files/
+# Temporary/audio files
+*.wav
+*.mp3
+*.m4a
+
+# Generated results
 birdnet_results/
 
-.env
-venv/
+# Python cache
+.pytest_cache/
+
+# IDE
+.vscode/

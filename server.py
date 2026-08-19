@@ -3,17 +3,34 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from birdnetlib import Recording
 from birdnetlib.analyzer import Analyzer
-from pydub import AudioSegment
-import tempfile, os, traceback
+import tempfile
+import os
+import traceback
 from datetime import datetime
-
 from utils.ebird import get_rarity
 from utils.media_fetcher import get_bird_image
 from utils.wiki_summary import get_bird_summary
 
-app = FastAPI(title="BirdVoice API")
+app = FastAPI(title="Bird Voice Recognition API")
 
-# CORS
+@app.get("/")
+def home():
+    return {"status": "BirdVoice API running"}
+
+@app.get("/ping")
+def ping():
+    return {"message": "API working"}
+
+analyzer = None
+
+def get_analyzer():
+    global analyzer
+    if analyzer is None:
+        print("Loading BirdNET model...")
+        analyzer = Analyzer()
+        print("BirdNET model loaded.")
+    return analyzer
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,44 +39,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load model once at startup
-print("Loading BirdNET model...")
-analyzer = Analyzer()
-print("BirdNET model loaded.")
-
-@app.get("/")
-def home():
-    return {"status": "BirdVoice API running"}
-
 @app.post("/identify")
-async def identify(audio: UploadFile = File(...), lat: float = None, lon: float = None):
-
+async def identify(
+    audio: UploadFile = File(...),
+    lat: float = None,
+    lon: float = None
+):
     tmp_path = None
 
     try:
-        print("Request received")
+        print("Request received on /identify")
 
         contents = await audio.read()
 
         if not contents:
-            raise HTTPException(status_code=400, detail="Empty audio")
+            return JSONResponse(
+                content={"error": "Uploaded file is empty"},
+                status_code=400
+            )
 
-        # save audio
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
             tmp.write(contents)
             tmp_path = tmp.name
 
-        print("Audio saved:", tmp_path)
-
-        # trim audio to 5 seconds
-        sound = AudioSegment.from_file(tmp_path)
-        sound = sound[:5000]
-        sound.export(tmp_path, format="wav")
-
-        print("Audio trimmed")
+        print("Audio saved at:", tmp_path)
 
         recording = Recording(
-            analyzer,
+            get_analyzer(),
             tmp_path,
             lat=lat or 0,
             lon=lon or 0,
@@ -67,29 +73,36 @@ async def identify(audio: UploadFile = File(...), lat: float = None, lon: float 
             min_conf=0.1,
         )
 
-        print("Starting analysis")
+        print("Starting analysis...")
         recording.analyze()
-        print("Analysis finished")
+        print("Analysis finished.")
 
         if not recording.detections:
-            raise HTTPException(status_code=404, detail="No bird detected")
+            raise HTTPException(status_code=404, detail="No bird detected in audio")
 
-        top = sorted(recording.detections, key=lambda x: x["confidence"], reverse=True)[0]
+        top = sorted(
+            recording.detections,
+            key=lambda x: x["confidence"],
+            reverse=True
+        )[0]
 
         species = top["common_name"]
         scientific_name = top["scientific_name"]
         confidence = round(top["confidence"], 2)
 
         rarity = get_rarity(scientific_name) or "unknown"
-        image_url = get_bird_image(species, scientific_name)
-        description = get_bird_summary(species)
+        image_url = get_bird_image(
+            species,
+            scientific_name
+        ) or "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg"
+        description = get_bird_summary(species) or ""
 
         return {
             "bird": {
                 "common_name": species,
                 "scientific_name": scientific_name,
                 "rarity": rarity,
-                "description": description or ""
+                "description": description
             },
             "media": {
                 "image_url": image_url,
@@ -97,7 +110,11 @@ async def identify(audio: UploadFile = File(...), lat: float = None, lon: float 
             }
         }
 
+    except HTTPException as e:
+        raise e
+
     except Exception as e:
+        print("ERROR during /identify request:")
         traceback.print_exc()
         return JSONResponse(
             content={"error": str(e)},
