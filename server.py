@@ -126,9 +126,17 @@ def run_birdnet(audio_path, lat, lon):
     print("RUN_BIRDNET: Recording created", flush=True)
     print("RUN_BIRDNET: calling recording.analyze()...", flush=True)
 
-    recording.analyze()
+    try:
+        print("RUN_BIRDNET: starting analyze()", flush=True)
 
-    print("RUN_BIRDNET: recording.analyze() finished", flush=True)
+        recording.analyze()
+
+        print("RUN_BIRDNET: recording.analyze() finished", flush=True)
+
+    except Exception as e:
+        print("RUN_BIRDNET ERROR:", repr(e), flush=True)
+        traceback.print_exc()
+        raise
 
     print(
         "RUN_BIRDNET: detections =",
@@ -137,7 +145,6 @@ def run_birdnet(audio_path, lat, lon):
     )
 
     return recording.detections
-
 
 # =========================================================
 # EXTERNAL INFORMATION
