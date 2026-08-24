@@ -128,8 +128,14 @@ def run_birdnet(audio_path, lat, lon):
 
     try:
         print("RUN_BIRDNET: starting analyze()", flush=True)
+        print("RUN_BIRDNET: BEFORE ANALYZE",flush=True)
+        print("RUN_BIRDNET: audio exists =", os.path.exists(audio_path), flush=True)
+        print("RUN_BIRDNET: audio size =", os.path.getsize(audio_path), flush=True)
+        print("RUN_BIRDNET: audio path =", audio_path, flush=True)
 
         recording.analyze()
+
+        print("RUN_BIRDNET: AFTER ANALYZE",flush=True)
 
         print("RUN_BIRDNET: recording.analyze() finished", flush=True)
 
