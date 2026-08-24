@@ -44,7 +44,7 @@ analyzer = None
 
 # Only a small number of threads because Render Free has
 # limited CPU/RAM.
-executor = ThreadPoolExecutor(max_workers=2)
+executor = ThreadPoolExecutor(max_workers=1)
 
 
 MAX_FILE_SIZE = 10 * 1024 * 1024   # 10 MB
