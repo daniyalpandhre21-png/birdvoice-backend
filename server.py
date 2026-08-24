@@ -1,3 +1,22 @@
+import os
+# Render ke free tier par C++ threads ko freeze hone se rokne ke liye
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+os.environ["TF_NUM_INTRAOP_THREADS"] = "1"
+os.environ["TF_NUM_INTEROP_THREADS"] = "1"
+
+import tensorflow as tf
+
+# TensorFlow ko single-thread par force karein
+try:
+    tf.config.threading.set_inter_op_parallelism_threads(1)
+    tf.config.threading.set_intra_op_parallelism_threads(1)
+except Exception as e:
+    print("TF threading config note:", e)
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -12,7 +31,6 @@ from utils.wiki_summary import get_bird_summary
 from datetime import datetime
 from pathlib import Path
 import tempfile
-import os
 import traceback
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
@@ -42,10 +60,8 @@ app.add_middleware(
 
 analyzer = None
 
-# Only a small number of threads because Render Free has
-# limited CPU/RAM.
+# Render Free par CPU overload bachane ke liye max_workers=1
 executor = ThreadPoolExecutor(max_workers=1)
-
 
 MAX_FILE_SIZE = 10 * 1024 * 1024   # 10 MB
 MAX_AUDIO_SECONDS = 30
@@ -83,11 +99,9 @@ def health():
 # =========================================================
 
 def get_analyzer():
-
     global analyzer
 
     if analyzer is None:
-
         print("===================================")
         print("Loading BirdNET model...")
         print("===================================")
@@ -106,7 +120,6 @@ def get_analyzer():
 # =========================================================
 
 def run_birdnet(audio_path, lat, lon):
-
     print("RUN_BIRDNET: getting analyzer...", flush=True)
 
     model = get_analyzer()
@@ -128,15 +141,14 @@ def run_birdnet(audio_path, lat, lon):
 
     try:
         print("RUN_BIRDNET: starting analyze()", flush=True)
-        print("RUN_BIRDNET: BEFORE ANALYZE",flush=True)
+        print("RUN_BIRDNET: BEFORE ANALYZE", flush=True)
         print("RUN_BIRDNET: audio exists =", os.path.exists(audio_path), flush=True)
         print("RUN_BIRDNET: audio size =", os.path.getsize(audio_path), flush=True)
         print("RUN_BIRDNET: audio path =", audio_path, flush=True)
 
         recording.analyze()
 
-        print("RUN_BIRDNET: AFTER ANALYZE",flush=True)
-
+        print("RUN_BIRDNET: AFTER ANALYZE", flush=True)
         print("RUN_BIRDNET: recording.analyze() finished", flush=True)
 
     except Exception as e:
@@ -152,12 +164,12 @@ def run_birdnet(audio_path, lat, lon):
 
     return recording.detections
 
+
 # =========================================================
 # EXTERNAL INFORMATION
 # =========================================================
 
 def get_extra_info(species, scientific_name):
-
     try:
         rarity = get_rarity(scientific_name)
     except Exception as e:
@@ -181,8 +193,7 @@ def get_extra_info(species, scientific_name):
 
     return {
         "rarity": rarity or "unknown",
-        "image_url": image_url or
-        "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg",
+        "image_url": image_url or "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg",
         "description": description or ""
     }
 
@@ -197,20 +208,14 @@ async def identify(
     lat: float = None,
     lon: float = None
 ):
-
     tmp_path = None
 
     try:
-
         print("===================================")
         print("Request received: /identify")
         print("Filename:", audio.filename)
         print("Content type:", audio.content_type)
         print("===================================")
-
-        # -------------------------------------------------
-        # READ FILE
-        # -------------------------------------------------
 
         contents = await audio.read()
 
@@ -220,72 +225,42 @@ async def identify(
                 detail="Uploaded audio file is empty"
             )
 
-        # -------------------------------------------------
-        # FILE SIZE CHECK
-        # -------------------------------------------------
-
         if len(contents) > MAX_FILE_SIZE:
-
             raise HTTPException(
                 status_code=413,
                 detail="Audio file is too large. Maximum size is 10 MB."
             )
-
-        # -------------------------------------------------
-        # KEEP ORIGINAL EXTENSION
-        # -------------------------------------------------
 
         extension = Path(
             audio.filename or "audio.wav"
         ).suffix.lower()
 
         if extension not in [".wav", ".mp3", ".ogg", ".flac", ".m4a"]:
-
             extension = ".wav"
-
-        # -------------------------------------------------
-        # SAVE TEMP FILE
-        # -------------------------------------------------
 
         with tempfile.NamedTemporaryFile(
             delete=False,
             suffix=extension
         ) as tmp:
-
             tmp.write(contents)
             tmp_path = tmp.name
 
         print("Audio saved:", tmp_path)
 
-        # -------------------------------------------------
-        # AUDIO DURATION CHECK
-        # -------------------------------------------------
-
         try:
-
             info = sf.info(tmp_path)
-
             duration = info.frames / info.samplerate
-
             print("Audio duration:", duration)
 
             if duration > MAX_AUDIO_SECONDS:
-
                 raise HTTPException(
                     status_code=400,
                     detail=f"Audio is too long. Maximum allowed is {MAX_AUDIO_SECONDS} seconds."
                 )
-
         except HTTPException:
             raise
-
         except Exception as e:
-
             print("Could not read audio metadata:", e)
-
-        # -------------------------------------------------
-        # RUN BIRDNET
-        # -------------------------------------------------
 
         print("Starting BirdNET analysis...")
 
@@ -301,20 +276,11 @@ async def identify(
 
         print("BirdNET analysis finished.")
 
-        # -------------------------------------------------
-        # NO DETECTION
-        # -------------------------------------------------
-
         if not detections:
-
             raise HTTPException(
                 status_code=404,
                 detail="No bird detected in audio"
             )
-
-        # -------------------------------------------------
-        # BEST RESULT
-        # -------------------------------------------------
 
         top = max(
             detections,
@@ -340,10 +306,6 @@ async def identify(
         print("Scientific:", scientific_name)
         print("Confidence:", confidence)
 
-        # -------------------------------------------------
-        # GET EXTRA INFORMATION
-        # -------------------------------------------------
-
         print("Getting bird information...")
 
         extra = await loop.run_in_executor(
@@ -353,10 +315,6 @@ async def identify(
             scientific_name
         )
 
-        # -------------------------------------------------
-        # RESPONSE
-        # -------------------------------------------------
-
         response = {
             "bird": {
                 "common_name": species,
@@ -364,7 +322,6 @@ async def identify(
                 "rarity": extra["rarity"],
                 "description": extra["description"]
             },
-
             "media": {
                 "image_url": extra["image_url"],
                 "confidence": confidence
@@ -372,27 +329,15 @@ async def identify(
         }
 
         print("Request completed successfully.")
-
         return response
 
-    # =====================================================
-    # HTTP ERRORS
-    # =====================================================
-
     except HTTPException as e:
-
         raise e
 
-    # =====================================================
-    # OTHER ERRORS
-    # =====================================================
-
     except Exception as e:
-
         print("===================================")
         print("ERROR DURING /identify")
         print("===================================")
-
         traceback.print_exc()
 
         return JSONResponse(
@@ -402,17 +347,10 @@ async def identify(
             }
         )
 
-    # =====================================================
-    # DELETE TEMP FILE
-    # =====================================================
-
     finally:
-
         if tmp_path and os.path.exists(tmp_path):
-
             try:
                 os.remove(tmp_path)
                 print("Temporary file deleted.")
-
             except Exception as e:
                 print("Could not delete temporary file:", e)
