@@ -38,7 +38,7 @@ st.set_page_config(
 )
 
 # =========================================================
-# CUSTOM FOREST & GREENERY CSS THEME
+# CUSTOM FOREST & GREENERY CSS THEME (Fixed Text Visibility)
 # =========================================================
 st.markdown("""
     <style>
@@ -78,6 +78,19 @@ st.markdown("""
         color: #c8e6c9;
     }
 
+    /* Make instruction text prominent and dark */
+    .instruction-box {
+        background-color: #e8f5e9;
+        padding: 15px 20px;
+        border-radius: 10px;
+        border-left: 5px solid #2d5a27;
+        color: #1b3022;
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-top: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
     /* Result Card Styling */
     .result-card {
         background-color: #ffffff;
@@ -112,7 +125,7 @@ st.markdown("""
 st.markdown("""
     <div class="main-header">
         <h1>🐦 BirdNova</h1>
-        <p>Listen to the canopy. Upload a bird call to identify the species using AI & BirdNET.</p>
+        <p>Listen to the canopy. Upload or record a bird call to identify the species using AI & BirdNET.</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -121,7 +134,7 @@ st.markdown("""
 # =========================================================
 @st.cache_resource
 def load_birdnet_analyzer():
-    st.info("Loading BirdNET model... Please wait (this happens only once).")
+    st.info("Loading BirdNET model... Please wait (dies happens only once).")
     analyzer = Analyzer()
     return analyzer
 
@@ -132,16 +145,21 @@ except Exception as e:
     analyzer = None
 
 # =========================================================
-# SIDEBAR CONTROLS
+# SIDEBAR CONTROLS (File Upload + Live Audio Recording)
 # =========================================================
 with st.sidebar:
     st.header("🌲 BirdNova Panel")
-    st.write("Configure your audio file and coordinates.")
+    st.write("Provide an audio sample via upload or live mic.")
     
+    # Option 1: File Uploader
     uploaded_file = st.file_uploader(
-        "Choose an audio file",
+        "Upload Audio File",
         type=["wav", "mp3", "ogg", "flac", "m4a"]
     )
+    
+    st.markdown("---")
+    st.write("🎙️ **Or Record Live Audio**")
+    recorded_audio = st.audio_input("Record bird call")
     
     st.markdown("---")
     st.subheader("📍 Location Details")
@@ -151,25 +169,29 @@ with st.sidebar:
     st.markdown("---")
     analyze_btn = st.button("🍃 Identify Bird", type="primary")
 
+# Determine which audio source is active (Prioritize uploaded file, fallback to live recording)
+active_audio = uploaded_file if uploaded_file is not None else recorded_audio
+
 # =========================================================
 # INPUT FORM & EXECUTION
 # =========================================================
 if analyze_btn:
-    if uploaded_file is None:
-        st.warning("⚠️ Please upload an audio file first!")
+    if active_audio is None:
+        st.warning("⚠️ Please upload an audio file or record a live audio sample first!")
     elif analyzer is None:
         st.error("❌ BirdNET model is not loaded properly.")
     else:
         with st.spinner("🎧 Analyzing audio and identifying bird..."):
             tmp_path = None
             try:
-                # Save uploaded file temporarily
-                extension = Path(uploaded_file.name).suffix.lower()
+                # Get file extension safely
+                file_name = getattr(active_audio, "name", "recording.wav")
+                extension = Path(file_name).suffix.lower()
                 if not extension:
                     extension = ".wav"
 
                 with tempfile.NamedTemporaryFile(delete=False, suffix=extension) as tmp:
-                    tmp.write(uploaded_file.getvalue())
+                    tmp.write(active_audio.getvalue())
                     tmp_path = tmp.name
 
                 # Check duration
@@ -182,7 +204,7 @@ if analyze_btn:
                 except Exception:
                     pass
 
-                # Run BirdNET Recording Analysis
+                # Run BirdNET Recording Analysis (Using 0.10 for better detection)
                 recording = Recording(
                     analyzer,
                     tmp_path,
@@ -196,7 +218,7 @@ if analyze_btn:
                 detections = recording.detections
 
                 if not detections:
-                    st.warning("🌿 No bird detected in the audio. Try another sample or adjust confidence.")
+                    st.warning("🌿 No bird detected in the audio. Try a clearer recording or adjust location.")
                 else:
                     # Get top result
                     top = max(detections, key=lambda x: x.get("confidence", 0))
@@ -251,4 +273,9 @@ if analyze_btn:
                     except Exception:
                         pass
 else:
-    st.info("👈 Please upload an audio file from the sidebar and click **Identify Bird** to begin.")
+    # High-visibility styled instruction message
+    st.markdown("""
+        <div class="instruction-box">
+            👉 Please upload an audio file or use the live microphone recorder in the sidebar, then click <b>Identify Bird</b> to begin exploring with BirdNova.
+        </div>
+    """, unsafe_allow_html=True)
