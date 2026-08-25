@@ -188,7 +188,6 @@ st.markdown(
     background: #173d25;
     display: block !important;
     visibility: visible !important;
-    transform: none !important;
 }
 
 [data-testid="stSidebar"] * {
