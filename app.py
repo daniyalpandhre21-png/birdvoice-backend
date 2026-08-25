@@ -38,7 +38,7 @@ st.set_page_config(
 )
 
 # =========================================================
-# CUSTOM FOREST & GREENERY CSS THEME (Fixed Text Visibility)
+# CUSTOM FOREST & GREENERY CSS THEME (Fixed Text & Readability)
 # =========================================================
 st.markdown("""
     <style>
@@ -78,7 +78,12 @@ st.markdown("""
         color: #c8e6c9;
     }
 
-    /* Make instruction text prominent and dark */
+    /* Make all standard text dark and readable */
+    p, span, label, div {
+        color: #2c3e2d;
+    }
+
+    /* Instruction Box Styling */
     .instruction-box {
         background-color: #e8f5e9;
         padding: 15px 20px;
@@ -134,7 +139,7 @@ st.markdown("""
 # =========================================================
 @st.cache_resource
 def load_birdnet_analyzer():
-    st.info("Loading BirdNET model... Please wait (dies happens only once).")
+    st.info("Loading BirdNET model... Please wait (this happens only once).")
     analyzer = Analyzer()
     return analyzer
 
@@ -145,15 +150,14 @@ except Exception as e:
     analyzer = None
 
 # =========================================================
-# SIDEBAR CONTROLS (File Upload + Live Audio Recording)
+# SIDEBAR CONTROLS
 # =========================================================
 with st.sidebar:
     st.header("🌲 BirdNova Panel")
     st.write("Provide an audio sample via upload or live mic.")
     
-    # Option 1: File Uploader
     uploaded_file = st.file_uploader(
-        "Upload Audio File",
+        "Choose an audio file",
         type=["wav", "mp3", "ogg", "flac", "m4a"]
     )
     
@@ -169,7 +173,6 @@ with st.sidebar:
     st.markdown("---")
     analyze_btn = st.button("🍃 Identify Bird", type="primary")
 
-# Determine which audio source is active (Prioritize uploaded file, fallback to live recording)
 active_audio = uploaded_file if uploaded_file is not None else recorded_audio
 
 # =========================================================
@@ -184,7 +187,6 @@ if analyze_btn:
         with st.spinner("🎧 Analyzing audio and identifying bird..."):
             tmp_path = None
             try:
-                # Get file extension safely
                 file_name = getattr(active_audio, "name", "recording.wav")
                 extension = Path(file_name).suffix.lower()
                 if not extension:
@@ -194,7 +196,6 @@ if analyze_btn:
                     tmp.write(active_audio.getvalue())
                     tmp_path = tmp.name
 
-                # Check duration
                 try:
                     info = sf.info(tmp_path)
                     duration = info.frames / info.samplerate
@@ -204,7 +205,6 @@ if analyze_btn:
                 except Exception:
                     pass
 
-                # Run BirdNET Recording Analysis (Using 0.10 for better detection)
                 recording = Recording(
                     analyzer,
                     tmp_path,
@@ -220,13 +220,11 @@ if analyze_btn:
                 if not detections:
                     st.warning("🌿 No bird detected in the audio. Try a clearer recording or adjust location.")
                 else:
-                    # Get top result
                     top = max(detections, key=lambda x: x.get("confidence", 0))
                     species = top.get("common_name", "Unknown bird")
                     scientific_name = top.get("scientific_name", "")
                     confidence = round(float(top.get("confidence", 0)), 2)
 
-                    # Fetch Extra Info
                     rarity = "unknown"
                     try:
                         rarity = get_rarity(scientific_name) or "unknown"
@@ -239,11 +237,18 @@ if analyze_btn:
                     except Exception:
                         pass
 
-                    description = ""
+                    full_description = ""
                     try:
-                        description = get_bird_summary(species) or ""
+                        full_description = get_bird_summary(species) or ""
                     except Exception:
                         pass
+
+                    # Shorten description to first 2-3 sentences for clean UI
+                    if full_description:
+                        sentences = full_description.split('. ')
+                        short_description = '. '.join(sentences[:3]) + ('.' if not full_description.endswith('.') else '')
+                    else:
+                        short_description = "No description available for this species."
 
                     # Display Results inside a clean Forest Card
                     st.markdown('<div class="result-card">', unsafe_allow_html=True)
@@ -258,9 +263,14 @@ if analyze_btn:
                         st.markdown(f"**Confidence:** `{confidence * 100:.1f}%`")
                         st.markdown(f"**Rarity:** `{rarity}`")
 
-                    if description:
-                        st.markdown("### 📖 About the Bird")
-                        st.write(description)
+                    st.markdown("### 📖 About the Bird")
+                    st.write(short_description)
+
+                    # Optional: Expandable section for full Wikipedia text
+                    if full_description and len(full_description) > len(short_description):
+                        with st.expander("Read full Wikipedia summary"):
+                            st.write(full_description)
+
                     st.markdown('</div>', unsafe_allow_html=True)
 
             except Exception as e:
@@ -273,7 +283,6 @@ if analyze_btn:
                     except Exception:
                         pass
 else:
-    # High-visibility styled instruction message
     st.markdown("""
         <div class="instruction-box">
             👉 Please upload an audio file or use the live microphone recorder in the sidebar, then click <b>Identify Bird</b> to begin exploring with BirdNova.
