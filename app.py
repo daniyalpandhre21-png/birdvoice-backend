@@ -29,25 +29,99 @@ import tempfile
 import soundfile as sf
 
 # =========================================================
-# PAGE CONFIGURATION
+# PAGE CONFIGURATION (Wide Mode)
 # =========================================================
 st.set_page_config(
-    page_title="Bird Voice Recognition",
-    page_icon="🐦",
-    layout="centered"
+    page_title="BirdNova | AI Bird Identifier",
+    page_icon="🌿",
+    layout="wide"
 )
 
-st.title("🐦 Bird Voice Recognition System")
-st.write("Upload an audio file of a bird's call to identify the species using BirdNET!")
+# =========================================================
+# CUSTOM FOREST & GREENERY CSS THEME
+# =========================================================
+st.markdown("""
+    <style>
+    /* Main background & font styling */
+    .stApp {
+        background-color: #f4f7f4;
+    }
+    
+    /* Sidebar styling */
+    [data-testid="stSidebar"] {
+        background-color: #1b3022;
+        color: #ffffff;
+    }
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {
+        color: #e2ede5 !important;
+    }
+
+    /* Custom Header Style */
+    .main-header {
+        background: linear-gradient(135deg, #2d5a27 0%, #1b3022 100%);
+        padding: 30px;
+        border-radius: 15px;
+        color: white;
+        text-align: center;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .main-header h1 {
+        margin: 0;
+        font-size: 2.5rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+    .main-header p {
+        margin-top: 10px;
+        font-size: 1.1rem;
+        color: #c8e6c9;
+    }
+
+    /* Result Card Styling */
+    .result-card {
+        background-color: #ffffff;
+        padding: 25px;
+        border-radius: 15px;
+        border-left: 6px solid #2d5a27;
+        box-shadow: 0 4px 12px rgba(45, 90, 39, 0.08);
+        margin-top: 20px;
+    }
+
+    /* Custom Button Style */
+    .stButton>button {
+        background-color: #2d5a27 !important;
+        color: white !important;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        padding: 0.6rem 1.2rem;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        background-color: #3b7a33 !important;
+        box-shadow: 0 4px 10px rgba(45, 90, 39, 0.3);
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# HEADER BANNER
+# =========================================================
+st.markdown("""
+    <div class="main-header">
+        <h1>🐦 BirdNova</h1>
+        <p>Listen to the canopy. Upload a bird call to identify the species using AI & BirdNET.</p>
+    </div>
+""", unsafe_allow_html=True)
 
 # =========================================================
 # LOAD ANALYZER (CACHED)
 # =========================================================
 @st.cache_resource
 def load_birdnet_analyzer():
-    st.info("Loading BirdNET model... Please wait (this happens only once).")
-    analyzer = Analyzer()
-    return analyzer
+    return Analyzer()
 
 try:
     analyzer = load_birdnet_analyzer()
@@ -56,29 +130,38 @@ except Exception as e:
     analyzer = None
 
 # =========================================================
-# INPUT FORM
+# SIDEBAR CONTROLS (Greenery Theme Input Panel)
 # =========================================================
-uploaded_file = st.file_uploader(
-    "Choose an audio file",
-    type=["wav", "mp3", "ogg", "flac", "m4a"]
-)
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/3069/3069172.png", width=70)
+    st.header("🌲 BirdNova Control Panel")
+    st.write("Configure your audio sample and location parameters.")
+    
+    uploaded_file = st.file_uploader(
+        "Upload Audio File",
+        type=["wav", "mp3", "ogg", "flac", "m4a"]
+    )
+    
+    st.markdown("---")
+    st.subheader("📍 Location Details")
+    lat = st.number_input("Latitude", value=0.0, format="%.4f")
+    lon = st.number_input("Longitude", value=0.0, format="%.4f")
+    
+    st.markdown("---")
+    analyze_btn = st.button("🍃 Identify Bird", type="primary")
 
-col1, col2 = st.columns(2)
-with col1:
-    lat = st.number_input("Latitude (Optional)", value=0.0, format="%.4f")
-with col2:
-    lon = st.number_input("Longitude (Optional)", value=0.0, format="%.4f")
-
-if st.button("Identify Bird", type="primary"):
+# =========================================================
+# MAIN CONTENT & ANALYSIS LOGIC
+# =========================================================
+if analyze_btn:
     if uploaded_file is None:
-        st.warning("Please upload an audio file first!")
+        st.warning("⚠️ Please upload an audio file from the sidebar first!")
     elif analyzer is None:
-        st.error("BirdNET model is not loaded properly.")
+        st.error("❌ BirdNET model is not loaded properly.")
     else:
-        with st.spinner("Analyzing audio and identifying bird... 🎧"):
+        with st.spinner("🎧 BirdNova is walking through the audio... analyzing calls..."):
             tmp_path = None
             try:
-                # Save uploaded file temporarily
                 extension = Path(uploaded_file.name).suffix.lower()
                 if not extension:
                     extension = ".wav"
@@ -107,13 +190,11 @@ if st.button("Identify Bird", type="primary"):
                     min_conf=0.20
                 )
                 recording.analyze()
-
                 detections = recording.detections
 
                 if not detections:
-                    st.warning("No bird detected in the audio. Try another sample or adjust confidence.")
+                    st.warning("🌿 No bird detected in this audio. Try a clearer recording.")
                 else:
-                    # Get top result
                     top = max(detections, key=lambda x: x.get("confidence", 0))
                     species = top.get("common_name", "Unknown bird")
                     scientific_name = top.get("scientific_name", "")
@@ -138,8 +219,9 @@ if st.button("Identify Bird", type="primary"):
                     except Exception:
                         pass
 
-                    # Display Results
-                    st.success("Bird Identified Successfully! 🎉")
+                    # Display Results inside a clean Forest Card
+                    st.markdown('<div class="result-card">', unsafe_allow_html=True)
+                    st.success("🎉 Bird Identified Successfully by BirdNova!")
                     
                     res_col1, res_col2 = st.columns([1, 2])
                     with res_col1:
@@ -147,12 +229,13 @@ if st.button("Identify Bird", type="primary"):
                     with res_col2:
                         st.subheader(species)
                         st.markdown(f"**Scientific Name:** *{scientific_name}*")
-                        st.markdown(f"**Confidence:** `{confidence * 100:.1f}%`")
-                        st.markdown(f"**Rarity:** `{rarity}`")
+                        st.markdown(f"**Confidence Score:** `{confidence * 100:.1f}%`")
+                        st.markdown(f"**Species Rarity:** `{rarity}`")
 
                     if description:
-                        st.markdown("### About the Bird")
+                        st.markdown("### 📖 About this Bird")
                         st.write(description)
+                    st.markdown('</div>', unsafe_allow_html=True)
 
             except Exception as e:
                 st.error(f"An error occurred during analysis: {e}")
@@ -163,3 +246,5 @@ if st.button("Identify Bird", type="primary"):
                         os.remove(tmp_path)
                     except Exception:
                         pass
+else:
+    st.info("👈 Please use the sidebar controls to upload an audio file and click **Identify Bird** to start exploring with BirdNova.")
