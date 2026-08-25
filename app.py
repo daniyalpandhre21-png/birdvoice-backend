@@ -9,6 +9,7 @@ os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
 os.environ["TF_NUM_INTRAOP_THREADS"] = "1"
 os.environ["TF_NUM_INTEROP_THREADS"] = "1"
 
@@ -20,7 +21,13 @@ try:
 except Exception:
     pass
 
+
+# =========================================================
+# IMPORTS
+# =========================================================
+
 import streamlit as st
+
 from birdnetlib import Recording
 from birdnetlib.analyzer import Analyzer
 
@@ -50,12 +57,13 @@ st.set_page_config(
 # CUSTOM CSS
 # =========================================================
 
-st.markdown("""
+st.markdown(
+    """
 <style>
 
-/* ================================
+/* =====================================================
    GLOBAL
-================================ */
+===================================================== */
 
 .stApp {
     background: #f5f8f5;
@@ -68,9 +76,9 @@ st.markdown("""
 }
 
 
-/* ================================
-   HEADER
-================================ */
+/* =====================================================
+   HERO
+===================================================== */
 
 .hero {
     background: linear-gradient(
@@ -108,9 +116,9 @@ st.markdown("""
 }
 
 
-/* ================================
+/* =====================================================
    SECTION TITLES
-================================ */
+===================================================== */
 
 .section-title {
     color: #173d25 !important;
@@ -121,9 +129,9 @@ st.markdown("""
 }
 
 
-/* ================================
+/* =====================================================
    FEATURE CARDS
-================================ */
+===================================================== */
 
 .feature-card {
     background: white;
@@ -154,9 +162,9 @@ st.markdown("""
 }
 
 
-/* ================================
+/* =====================================================
    INPUT CARD
-================================ */
+===================================================== */
 
 .input-card {
     background: white;
@@ -167,13 +175,14 @@ st.markdown("""
 
     box-shadow: 0 5px 18px rgba(35, 80, 45, 0.07);
 
+    margin-top: 28px;
     margin-bottom: 20px;
 }
 
 
-/* ================================
+/* =====================================================
    SIDEBAR
-================================ */
+===================================================== */
 
 [data-testid="stSidebar"] {
     background: #173d25;
@@ -204,9 +213,9 @@ st.markdown("""
 }
 
 
-/* ================================
+/* =====================================================
    BUTTON
-================================ */
+===================================================== */
 
 .stButton > button {
     width: 100%;
@@ -238,9 +247,9 @@ st.markdown("""
 }
 
 
-/* ================================
+/* =====================================================
    RESULT CARD
-================================ */
+===================================================== */
 
 .result-card {
     background: white;
@@ -278,9 +287,9 @@ st.markdown("""
 }
 
 
-/* ================================
+/* =====================================================
    INFO BOXES
-================================ */
+===================================================== */
 
 .info-box {
     background: #f1f7f2;
@@ -304,9 +313,9 @@ st.markdown("""
 }
 
 
-/* ================================
+/* =====================================================
    ABOUT
-================================ */
+===================================================== */
 
 .about-box {
     background: #f6faf6;
@@ -324,9 +333,9 @@ st.markdown("""
 }
 
 
-/* ================================
+/* =====================================================
    FOOTER
-================================ */
+===================================================== */
 
 .footer {
     text-align: center;
@@ -343,9 +352,9 @@ st.markdown("""
 }
 
 
-/* ================================
-   HIDE STREAMLIT BRANDING
-================================ */
+/* =====================================================
+   STREAMLIT BRANDING
+===================================================== */
 
 #MainMenu {
     visibility: hidden;
@@ -359,33 +368,66 @@ header {
     visibility: hidden;
 }
 
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 768px) {
+
+    .block-container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .hero {
+        padding: 30px 20px;
+        border-radius: 20px;
+    }
+
+    .hero-icon {
+        font-size: 45px;
+    }
+
+    .hero-title {
+        font-size: 34px;
+    }
+
+    .hero-subtitle {
+        font-size: 15px;
+    }
+
+    .feature-card {
+        margin-bottom: 12px;
+    }
+
+    .bird-name {
+        font-size: 26px;
+    }
+
+}
+
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True
+)
 
 
 # =========================================================
 # HERO
 # =========================================================
 
-st.markdown("""
+st.markdown(
+    """
 <div class="hero">
-
-    <div class="hero-icon">🐦</div>
-
-    <div class="hero-title">
-        BirdNova
-    </div>
-
-    <div class="hero-subtitle">
-        AI-powered bird sound identification
-    </div>
-
-    <div class="hero-subtitle">
-        Upload a recording or use your microphone to discover the bird.
-    </div>
-
+<div class="hero-icon">🐦</div>
+<div class="hero-title">BirdNova</div>
+<div class="hero-subtitle">AI-powered bird sound identification</div>
+<div class="hero-subtitle">Upload a recording or use your microphone to discover the bird.</div>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True
+)
 
 
 # =========================================================
@@ -394,45 +436,60 @@ st.markdown("""
 
 col1, col2, col3 = st.columns(3)
 
+
 with col1:
-    st.markdown("""
-    <div class="feature-card">
-        <div class="feature-icon">🎙️</div>
-        <div class="feature-title">Record</div>
-        <div class="feature-text">
-            Capture a bird call using your microphone.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+
+    st.markdown(
+        """
+<div class="feature-card">
+<div class="feature-icon">🎙️</div>
+<div class="feature-title">Record</div>
+<div class="feature-text">
+Capture a bird call using your microphone.
+</div>
+</div>
+""",
+        unsafe_allow_html=True
+    )
+
 
 with col2:
-    st.markdown("""
-    <div class="feature-card">
-        <div class="feature-icon">🧠</div>
-        <div class="feature-title">AI Detection</div>
-        <div class="feature-text">
-            BirdNET analyzes the sound and identifies the species.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+
+    st.markdown(
+        """
+<div class="feature-card">
+<div class="feature-icon">🧠</div>
+<div class="feature-title">AI Detection</div>
+<div class="feature-text">
+BirdNET analyzes the sound and identifies the species.
+</div>
+</div>
+""",
+        unsafe_allow_html=True
+    )
+
 
 with col3:
-    st.markdown("""
-    <div class="feature-card">
-        <div class="feature-icon">🌿</div>
-        <div class="feature-title">Discover</div>
-        <div class="feature-text">
-            Explore species information, rarity and images.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+
+    st.markdown(
+        """
+<div class="feature-card">
+<div class="feature-icon">🌿</div>
+<div class="feature-title">Discover</div>
+<div class="feature-text">
+Explore species information, rarity and images.
+</div>
+</div>
+""",
+        unsafe_allow_html=True
+    )
 
 
 st.write("")
 
 
 # =========================================================
-# BIRDNET ANALYZER
+# LOAD BIRDNET ANALYZER
 # =========================================================
 
 @st.cache_resource
@@ -464,23 +521,16 @@ except Exception as e:
 
 with st.sidebar:
 
-    st.markdown("""
-    <div class="sidebar-brand">
-
-        <div class="sidebar-brand-icon">
-            🐦
-        </div>
-
-        <div class="sidebar-brand-title">
-            BirdNova
-        </div>
-
-        <div class="sidebar-brand-text">
-            AI Bird Identification
-        </div>
-
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        """
+<div class="sidebar-brand">
+<div class="sidebar-brand-icon">🐦</div>
+<div class="sidebar-brand-title">BirdNova</div>
+<div class="sidebar-brand-text">AI Bird Identification</div>
+</div>
+""",
+        unsafe_allow_html=True
+    )
 
     st.markdown("---")
 
@@ -565,9 +615,9 @@ if analyze_btn:
 
             try:
 
-                # -----------------------------------------
-                # FILE
-                # -----------------------------------------
+                # =================================================
+                # FILE INFORMATION
+                # =================================================
 
                 file_name = getattr(
                     active_audio,
@@ -584,9 +634,9 @@ if analyze_btn:
                     extension = ".wav"
 
 
-                # -----------------------------------------
-                # TEMP FILE
-                # -----------------------------------------
+                # =================================================
+                # TEMPORARY AUDIO FILE
+                # =================================================
 
                 with tempfile.NamedTemporaryFile(
                     delete=False,
@@ -600,9 +650,9 @@ if analyze_btn:
                     tmp_path = tmp.name
 
 
-                # -----------------------------------------
+                # =================================================
                 # AUDIO DURATION
-                # -----------------------------------------
+                # =================================================
 
                 try:
 
@@ -627,9 +677,9 @@ if analyze_btn:
                     pass
 
 
-                # -----------------------------------------
-                # BIRDNET RECORDING
-                # -----------------------------------------
+                # =================================================
+                # CREATE BIRDNET RECORDING
+                # =================================================
 
                 recording = Recording(
                     analyzer,
@@ -641,19 +691,23 @@ if analyze_btn:
                 )
 
 
-                # -----------------------------------------
-                # ANALYZE
-                # -----------------------------------------
+                # =================================================
+                # ANALYZE AUDIO
+                # =================================================
 
                 recording.analyze()
 
 
+                # =================================================
+                # GET DETECTIONS
+                # =================================================
+
                 detections = recording.detections
 
 
-                # -----------------------------------------
+                # =================================================
                 # NO DETECTION
-                # -----------------------------------------
+                # =================================================
 
                 if not detections:
 
@@ -665,11 +719,12 @@ if analyze_btn:
                         "Try a clearer recording with less background noise."
                     )
 
+
                 else:
 
-                    # -------------------------------------
-                    # BEST RESULT
-                    # -------------------------------------
+                    # =================================================
+                    # BEST DETECTION
+                    # =================================================
 
                     top = max(
                         detections,
@@ -701,9 +756,9 @@ if analyze_btn:
                     )
 
 
-                    # -------------------------------------
+                    # =================================================
                     # RARITY
-                    # -------------------------------------
+                    # =================================================
 
                     rarity = "unknown"
 
@@ -721,9 +776,9 @@ if analyze_btn:
                         pass
 
 
-                    # -------------------------------------
+                    # =================================================
                     # IMAGE
-                    # -------------------------------------
+                    # =================================================
 
                     image_url = (
                         "https://upload.wikimedia.org/"
@@ -746,9 +801,9 @@ if analyze_btn:
                         pass
 
 
-                    # -------------------------------------
-                    # DESCRIPTION
-                    # -------------------------------------
+                    # =================================================
+                    # WIKIPEDIA DESCRIPTION
+                    # =================================================
 
                     full_description = ""
 
@@ -766,15 +821,14 @@ if analyze_btn:
                         pass
 
 
-                    # -------------------------------------
+                    # =================================================
                     # SHORT DESCRIPTION
-                    # -------------------------------------
+                    # =================================================
 
                     if full_description:
 
                         sentences = (
-                            full_description
-                            .split(". ")
+                            full_description.split(". ")
                         )
 
                         short_description = (
@@ -785,7 +839,8 @@ if analyze_btn:
 
                         if (
                             short_description
-                            and not short_description.endswith(".")
+                            and
+                            not short_description.endswith(".")
                         ):
 
                             short_description += "."
@@ -798,21 +853,22 @@ if analyze_btn:
                         )
 
 
-                    # =====================================
+                    # =================================================
                     # RESULT CARD
-                    # =====================================
+                    # =================================================
 
                     st.markdown(
                         '<div class="result-card">',
                         unsafe_allow_html=True
                     )
 
+
                     st.markdown(
                         """
-                        <div class="result-header">
-                            🎉 Bird Identified Successfully
-                        </div>
-                        """,
+<div class="result-header">
+🎉 Bird Identified Successfully
+</div>
+""",
                         unsafe_allow_html=True
                     )
 
@@ -823,9 +879,9 @@ if analyze_btn:
                     )
 
 
-                    # -------------------------------------
-                    # IMAGE
-                    # -------------------------------------
+                    # =================================================
+                    # BIRD IMAGE
+                    # =================================================
 
                     with result_col1:
 
@@ -836,22 +892,22 @@ if analyze_btn:
                         )
 
 
-                    # -------------------------------------
-                    # INFORMATION
-                    # -------------------------------------
+                    # =================================================
+                    # BIRD INFORMATION
+                    # =================================================
 
                     with result_col2:
 
                         st.markdown(
                             f"""
-                            <div class="bird-name">
-                                {species}
-                            </div>
+<div class="bird-name">
+{species}
+</div>
 
-                            <div class="scientific-name">
-                                {scientific_name}
-                            </div>
-                            """,
+<div class="scientific-name">
+{scientific_name}
+</div>
+""",
                             unsafe_allow_html=True
                         )
 
@@ -863,18 +919,13 @@ if analyze_btn:
 
                             st.markdown(
                                 f"""
-                                <div class="info-box">
-
-                                    <div class="info-label">
-                                        CONFIDENCE
-                                    </div>
-
-                                    <div class="info-value">
-                                        {confidence * 100:.1f}%
-                                    </div>
-
-                                </div>
-                                """,
+<div class="info-box">
+<div class="info-label">CONFIDENCE</div>
+<div class="info-value">
+{confidence * 100:.1f}%
+</div>
+</div>
+""",
                                 unsafe_allow_html=True
                             )
 
@@ -883,18 +934,13 @@ if analyze_btn:
 
                             st.markdown(
                                 f"""
-                                <div class="info-box">
-
-                                    <div class="info-label">
-                                        RARITY
-                                    </div>
-
-                                    <div class="info-value">
-                                        {rarity.title()}
-                                    </div>
-
-                                </div>
-                                """,
+<div class="info-box">
+<div class="info-label">RARITY</div>
+<div class="info-value">
+{rarity.title()}
+</div>
+</div>
+""",
                                 unsafe_allow_html=True
                             )
 
@@ -902,13 +948,10 @@ if analyze_btn:
                         st.write("")
 
 
-                        # ---------------------------------
-                        # CONFIDENCE BAR
-                        # ---------------------------------
-
                         st.markdown(
                             "#### 🎯 Detection Confidence"
                         )
+
 
                         st.progress(
                             min(
@@ -921,32 +964,33 @@ if analyze_btn:
                         )
 
 
-                    # =====================================
-                    # ABOUT
-                    # =====================================
+                    # =================================================
+                    # ABOUT BIRD
+                    # =================================================
 
                     st.markdown(
                         """
-                        <div class="section-title">
-                            📖 About this Bird
-                        </div>
-                        """,
+<div class="section-title">
+📖 About this Bird
+</div>
+""",
                         unsafe_allow_html=True
                     )
+
 
                     st.markdown(
                         f"""
-                        <div class="about-box">
-                            {short_description}
-                        </div>
-                        """,
+<div class="about-box">
+{short_description}
+</div>
+""",
                         unsafe_allow_html=True
                     )
 
 
-                    # =====================================
+                    # =================================================
                     # FULL DESCRIPTION
-                    # =====================================
+                    # =================================================
 
                     if (
                         full_description
@@ -970,9 +1014,9 @@ if analyze_btn:
                     )
 
 
-            # =============================================
-            # ERROR
-            # =============================================
+            # =====================================================
+            # ERROR HANDLING
+            # =====================================================
 
             except Exception as e:
 
@@ -981,9 +1025,9 @@ if analyze_btn:
                 )
 
 
-            # =============================================
-            # CLEANUP
-            # =============================================
+            # =====================================================
+            # CLEAN TEMP FILE
+            # =====================================================
 
             finally:
 
@@ -1004,35 +1048,28 @@ if analyze_btn:
 
 else:
 
-    # =====================================================
+    # =========================================================
     # EMPTY STATE
-    # =====================================================
+    # =========================================================
 
     st.markdown(
         """
-        <div class="input-card">
+<div class="input-card">
 
-            <div class="section-title">
-                🌿 Start Your Bird Discovery
-            </div>
+<div class="section-title">
+🌿 Start Your Bird Discovery
+</div>
 
-            <p style="
-                color:#607264;
-                font-size:16px;
-                line-height:1.7;
-            ">
+<p style="color:#607264;font-size:16px;line-height:1.7;">
+Upload a bird recording from the sidebar or record one using your microphone.
+</p>
 
-                Upload a bird recording from the sidebar
-                or record one using your microphone.
+<p style="color:#607264;font-size:16px;line-height:1.7;">
+BirdNova will analyze the sound using BirdNET and show the most likely species, confidence, rarity and additional information.
+</p>
 
-                BirdNova will analyze the sound using
-                BirdNET and show the most likely species,
-                confidence, rarity and additional information.
-
-            </p>
-
-        </div>
-        """,
+</div>
+""",
         unsafe_allow_html=True
     )
 
@@ -1043,15 +1080,11 @@ else:
 
 st.markdown(
     """
-    <div class="footer">
-
-        🐦 <b>BirdNova</b> · AI Bird Sound Recognition
-
-        <br>
-
-        Powered by BirdNET · Built with Python & Streamlit
-
-    </div>
-    """,
+<div class="footer">
+🐦 <b>BirdNova</b> · AI Bird Sound Recognition
+<br><br>
+Powered by BirdNET · Built with Python & Streamlit
+</div>
+""",
     unsafe_allow_html=True
 )
