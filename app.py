@@ -189,7 +189,7 @@ if analyze_btn:
                     lat=lat,
                     lon=lon,
                     date=datetime.now(),
-                    min_conf=0.20
+                    min_conf=0.10
                 )
                 recording.analyze()
 
