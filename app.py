@@ -29,7 +29,7 @@ import tempfile
 import soundfile as sf
 
 # =========================================================
-# PAGE CONFIGURATION (Wide Mode)
+# PAGE CONFIGURATION
 # =========================================================
 st.set_page_config(
     page_title="BirdNova | AI Bird Identifier",
@@ -59,7 +59,7 @@ st.markdown("""
     /* Custom Header Style */
     .main-header {
         background: linear-gradient(135deg, #2d5a27 0%, #1b3022 100%);
-        padding: 30px;
+        padding: 25px;
         border-radius: 15px;
         color: white;
         text-align: center;
@@ -68,13 +68,13 @@ st.markdown("""
     }
     .main-header h1 {
         margin: 0;
-        font-size: 2.5rem;
+        font-size: 2.3rem;
         font-weight: 700;
         letter-spacing: 1px;
     }
     .main-header p {
-        margin-top: 10px;
-        font-size: 1.1rem;
+        margin-top: 8px;
+        font-size: 1.05rem;
         color: #c8e6c9;
     }
 
@@ -121,7 +121,9 @@ st.markdown("""
 # =========================================================
 @st.cache_resource
 def load_birdnet_analyzer():
-    return Analyzer()
+    st.info("Loading BirdNET model... Please wait (this happens only once).")
+    analyzer = Analyzer()
+    return analyzer
 
 try:
     analyzer = load_birdnet_analyzer()
@@ -130,15 +132,14 @@ except Exception as e:
     analyzer = None
 
 # =========================================================
-# SIDEBAR CONTROLS (Greenery Theme Input Panel)
+# SIDEBAR CONTROLS
 # =========================================================
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3069/3069172.png", width=70)
-    st.header("🌲 BirdNova Control Panel")
-    st.write("Configure your audio sample and location parameters.")
+    st.header("🌲 BirdNova Panel")
+    st.write("Configure your audio file and coordinates.")
     
     uploaded_file = st.file_uploader(
-        "Upload Audio File",
+        "Choose an audio file",
         type=["wav", "mp3", "ogg", "flac", "m4a"]
     )
     
@@ -151,17 +152,18 @@ with st.sidebar:
     analyze_btn = st.button("🍃 Identify Bird", type="primary")
 
 # =========================================================
-# MAIN CONTENT & ANALYSIS LOGIC
+# INPUT FORM & EXECUTION
 # =========================================================
 if analyze_btn:
     if uploaded_file is None:
-        st.warning("⚠️ Please upload an audio file from the sidebar first!")
+        st.warning("⚠️ Please upload an audio file first!")
     elif analyzer is None:
         st.error("❌ BirdNET model is not loaded properly.")
     else:
-        with st.spinner("🎧 BirdNova is walking through the audio... analyzing calls..."):
+        with st.spinner("🎧 Analyzing audio and identifying bird..."):
             tmp_path = None
             try:
+                # Save uploaded file temporarily
                 extension = Path(uploaded_file.name).suffix.lower()
                 if not extension:
                     extension = ".wav"
@@ -190,11 +192,13 @@ if analyze_btn:
                     min_conf=0.20
                 )
                 recording.analyze()
+
                 detections = recording.detections
 
                 if not detections:
-                    st.warning("🌿 No bird detected in this audio. Try a clearer recording.")
+                    st.warning("🌿 No bird detected in the audio. Try another sample or adjust confidence.")
                 else:
+                    # Get top result
                     top = max(detections, key=lambda x: x.get("confidence", 0))
                     species = top.get("common_name", "Unknown bird")
                     scientific_name = top.get("scientific_name", "")
@@ -229,11 +233,11 @@ if analyze_btn:
                     with res_col2:
                         st.subheader(species)
                         st.markdown(f"**Scientific Name:** *{scientific_name}*")
-                        st.markdown(f"**Confidence Score:** `{confidence * 100:.1f}%`")
-                        st.markdown(f"**Species Rarity:** `{rarity}`")
+                        st.markdown(f"**Confidence:** `{confidence * 100:.1f}%`")
+                        st.markdown(f"**Rarity:** `{rarity}`")
 
                     if description:
-                        st.markdown("### 📖 About this Bird")
+                        st.markdown("### 📖 About the Bird")
                         st.write(description)
                     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -247,4 +251,4 @@ if analyze_btn:
                     except Exception:
                         pass
 else:
-    st.info("👈 Please use the sidebar controls to upload an audio file and click **Identify Bird** to start exploring with BirdNova.")
+    st.info("👈 Please upload an audio file from the sidebar and click **Identify Bird** to begin.")
